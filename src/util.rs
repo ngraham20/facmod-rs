@@ -7,7 +7,7 @@ use std::io::copy;
 use std::path::{PathBuf};
 
 pub async fn download_mods(fmods: Vec<serde_json::Value>, mod_folder: &str, username: &str, api_token: &str) -> Result<()> {
-    let mut path: PathBuf = [mod_folder].iter().collect();
+    let path: PathBuf = [mod_folder].iter().collect();
     info!("Checking mods folder: {}", path.to_str().unwrap());
     if !path.as_path().exists() {
         error_chain::bail!("Path {} does not exist.", path.to_str().unwrap());
@@ -24,7 +24,7 @@ pub async fn download_mods(fmods: Vec<serde_json::Value>, mod_folder: &str, user
 
                     // the download_url has double quotes ("") surrounding it. The slice grabs the middle bits
                     let request_url = format!("https://mods.factorio.com{}", &download_url[1..len-1]);
-                    download_file(request_url, &mut path, &client, &[("username", &username), ("token", &api_token)]).await?;
+                    download_file(request_url, path.clone(), &client, &[("username", &username), ("token", &api_token)]).await?;
                 },
                 _ => {}
             };
@@ -49,7 +49,7 @@ pub async fn search_mods(fmods: Vec<String>) -> Result<Vec<serde_json::Value>> {
     Ok(jsondata)
 }
 
-pub async fn download_file<T: Serialize + ?Sized>(target: String, path: &mut PathBuf, client: &reqwest::Client, params: &T) -> Result<()> {
+pub async fn download_file<T: Serialize + ?Sized>(target: String, mut path: PathBuf, client: &reqwest::Client, params: &T) -> Result<()> {
     debug!("Sending GET request to {}", target);
     let response = client.get(target).query(params).send().await?;
 
