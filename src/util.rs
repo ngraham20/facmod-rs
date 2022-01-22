@@ -1,7 +1,7 @@
 use crate::errors::*;
 use std::fs::File;
 use std::io::BufReader;
-use log::{debug, info};
+use log::{debug, info, trace};
 use serde::{Serialize, Deserialize};
 use std::io::copy;
 
@@ -71,10 +71,21 @@ fn load_yaml(config: &str) -> Result<serde_yaml::Value> {
 
 #[derive(Serialize, Deserialize)]
 pub struct FacModConfig {
-    pub username: String,
-    pub api_token: String,
-    pub mod_dir: String,
-    pub mod_list: Vec<String>
+    pub username: Option<String>,
+    pub api_token: Option<String>,
+    pub mod_dir: Option<String>,
+    pub mod_list: Option<Vec<String>>
+}
+
+impl FacModConfig {
+    pub fn new() -> Self {
+        FacModConfig {
+            username: None,
+            api_token: None,
+            mod_dir: None,
+            mod_list: None,
+        }
+    }
 }
 
 pub fn load_config(path: &str) -> Result<FacModConfig> {
