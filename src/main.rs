@@ -6,19 +6,17 @@ use env_logger::Env;
 
 #[tokio::main]
 async fn main() {
+    // init the loggerls
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     if let Err(ref e) = run().await {
-        use std::io::Write;
-        let stderr = &mut ::std::io::stderr();
-        let errmsg = "Error writing to stderr";
-
-        writeln!(stderr, "error: {}", e).expect(errmsg);
+        log::error!("error: {}", e);
 
         for e in e.iter().skip(1) {
-            writeln!(stderr, "caused by: {}", e).expect(errmsg);
+            log::error!("caused by: {}", e);
         }
         
         if let Some(backtrace) = e.backtrace() {
-            writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
+            log::error!("backtrace: {:?}", backtrace);
         }
 
         ::std::process::exit(1);
@@ -27,15 +25,8 @@ async fn main() {
 
 async fn run() -> Result<()> {
     let matches = cli::parse_args()?;
-    // init the loggerls
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-
-    // find all values
-    // username
-    // api_token
-    // mod_dir
-
+    // first, load the config file if specified
     let mut configdata = util::FacModConfig::new();
     if let Some(config) = matches.value_of("config") {
         configdata = util::load_config(config)?;
@@ -70,6 +61,7 @@ async fn run() -> Result<()> {
         confres += 1;
     }
 
+    // all arguments must exist in either the config file or as a command argument
     if confres > 0 {
         error_chain::bail!("Arguments missing from program");
     }

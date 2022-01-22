@@ -1,12 +1,18 @@
 use crate::errors::*;
 use std::fs::File;
 use std::io::BufReader;
-use log::{debug, info, trace};
+use log::{debug, info};
 use serde::{Serialize, Deserialize};
 use std::io::copy;
+use std::path::{PathBuf};
 
 pub async fn download_mods(fmods: Vec<serde_json::Value>, mod_folder: &str, username: &str, api_token: &str) -> Result<()> {
-    info!("Begining Mod Download");
+    let mut path: PathBuf = [mod_folder].iter().collect();
+    info!("Checking mods folder: {}", path.to_str().unwrap());
+    if !path.as_path().exists() {
+        error_chain::bail!("Path {} does not exist.", path.to_str().unwrap());
+    }
+    info!("Downloading mods into {}", path.to_str().unwrap());
     let client = reqwest::Client::new();
     for fmod in fmods {
         if let Some(releases) = fmod.get("releases") {
@@ -18,7 +24,7 @@ pub async fn download_mods(fmods: Vec<serde_json::Value>, mod_folder: &str, user
 
                     // the download_url has double quotes ("") surrounding it. The slice grabs the middle bits
                     let request_url = format!("https://mods.factorio.com{}", &download_url[1..len-1]);
-                    download_file(request_url, &mod_folder, &client, &[("username", &username), ("token", &api_token)]).await?;
+                    download_file(request_url, &mut path, &client, &[("username", &username), ("token", &api_token)]).await?;
                 },
                 _ => {}
             };
@@ -43,20 +49,20 @@ pub async fn search_mods(fmods: Vec<String>) -> Result<Vec<serde_json::Value>> {
     Ok(jsondata)
 }
 
-pub async fn download_file<T: Serialize + ?Sized>(target: String, mod_folder: &str, client: &reqwest::Client, params: &T) -> Result<()> {
+pub async fn download_file<T: Serialize + ?Sized>(target: String, path: &mut PathBuf, client: &reqwest::Client, params: &T) -> Result<()> {
     debug!("Sending GET request to {}", target);
     let response = client.get(target).query(params).send().await?;
 
     let mut dest = {
-        let fname = format!("{}/{}", mod_folder, response
+        let fname = response
             .url()
             .path_segments()
             .and_then(|segments| segments.last())
             .and_then(|name| if name.is_empty() { None } else { Some(name) })
-            .unwrap_or("tmp.bin"));
-
-        info!("Downolading file: {}", fname);
-        File::create(fname)?
+            .unwrap_or("tmp.bin");
+        path.push(fname);
+        info!("Downolading file: {}", path.to_str().unwrap());
+        File::create(path)?
     };
     let content =  response.text().await?;
     copy(&mut content.as_bytes(), &mut dest)?;
