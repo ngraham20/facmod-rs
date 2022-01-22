@@ -103,6 +103,7 @@ dependencies = [
  "atty",
  "bitflags",
  "indexmap",
+ "lazy_static",
  "os_str_bytes",
  "strsim",
  "termcolor",
@@ -159,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "facmod-rs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "env_logger",

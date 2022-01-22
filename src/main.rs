@@ -1,7 +1,7 @@
 mod errors;
 mod util;
+mod cli;
 pub use crate::errors::*;
-use clap::{App, Arg};
 
 #[tokio::main]
 async fn main() {
@@ -25,22 +25,7 @@ async fn main() {
 }
 
 async fn run() -> Result<()> {
-    let matches = App::new("Factorio Mod Installer")
-    .about("Download mods for Factorio")
-    .version("v0.2.0")
-    .author("@ngraham20 (GitHub)")
-    .arg(Arg::new("config")
-        .short('c')
-        .long("config")
-        .takes_value(true)
-        .value_name("FILE")
-        .help("Specifies a config file"))
-    .arg(Arg::new("mods_folder")
-        .short('m')
-        .long("mods_folder")
-        .takes_value(true)
-        .value_name("FOLDER")
-        .help("Specifies the location of the Factorio mods folder")).get_matches();
+    let matches = cli::parse_args()?;
     // init the loggerls
     env_logger::init();
 

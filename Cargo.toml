@@ -1,6 +1,8 @@
 [package]
 name = "facmod-rs"
-version = "0.2.0"
+description = "Download mods for Factorio"
+authors = ["Nathaniel Graham <@ngraham20, @raevenant>"]
+version = "0.3.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,4 +16,4 @@ tokio = {version = "1.15.0", features = ["full"]}
 log = "0.4.14"
 env_logger = "0.9.0"
 serde = {version = "1.0.117", features = ["derive"]}
-clap = "3.0.10"
+clap = {version = "3.0.10", features = ["cargo"]}
