@@ -29,6 +29,13 @@ async fn run() -> Result<()> {
     // init the loggerls
     env_logger::init();
 
+
+    // find all values
+    // username
+    // api_token
+    // mod_dir
+    // mod_list
+
     let configdata = util::load_config(matches.value_of("config").expect("required"))?;
     let fmods = configdata.mod_list;
     
