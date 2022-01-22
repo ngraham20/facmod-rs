@@ -1,12 +1,17 @@
 [package]
-name = "factorio-mod-downloader"
-version = "0.1.0"
+name = "facmod-rs"
+version = "0.2.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = "0.11.9"
+reqwest = {version = "0.11.9", features = ["json"]}
 serde_json = "1.0.75"
 serde_yaml = "0.8.13"
 error-chain = "0.12.4"
+tokio = {version = "1.15.0", features = ["full"]}
+log = "0.4.14"
+env_logger = "0.9.0"
+serde = {version = "1.0.117", features = ["derive"]}
+clap = "3.0.10"

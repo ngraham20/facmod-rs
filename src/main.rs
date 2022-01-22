@@ -1,8 +1,11 @@
 mod errors;
+mod util;
 pub use crate::errors::*;
+use clap::{App, Arg};
 
-fn main() {
-    if let Err(ref e) = run() {
+#[tokio::main]
+async fn main() {
+    if let Err(ref e) = run().await {
         use std::io::Write;
         let stderr = &mut ::std::io::stderr();
         let errmsg = "Error writing to stderr";
@@ -21,22 +24,39 @@ fn main() {
     }
 }
 
-fn run() -> Result<()> {
+async fn run() -> Result<()> {
+    let matches = App::new("Factorio Mod Installer")
+    .about("Download mods for Factorio")
+    .version("v0.2.0")
+    .author("@ngraham20 (GitHub)")
+    .arg(Arg::new("config")
+        .short('c')
+        .long("config")
+        .takes_value(true)
+        .value_name("FILE")
+        .help("Specifies a config file"))
+    .arg(Arg::new("mods_folder")
+        .short('m')
+        .long("mods_folder")
+        .takes_value(true)
+        .value_name("FOLDER")
+        .help("Specifies the location of the Factorio mods folder")).get_matches();
+    // init the loggerls
+    env_logger::init();
+
+    let configdata = util::load_config(matches.value_of("config").expect("required"))?;
+    let fmods = configdata.mod_list;
     
+    let mod_dir = match matches.value_of("mods_folder") {
+        Some(path) => String::from(path),
+        _ => configdata.mod_dir
+    };
+
+    // search for the mods on the factorio mod portal
+    let fmoddata = util::search_mods(fmods).await?;
+
+    // download mods
+    util::download_mods(fmoddata, &mod_dir, &configdata.username, &configdata.api_token).await?;
 
     Ok(())
 }
-
-
-async fn search_mods(mods: String) -> Result<()> {
-    let client = reqwest::Client::new();
-    let requesturl = format!("https://mods.factorio.com/api/mods/{}", "graftorio2-hs");
-    let res = client.get("https://mods.factorio.com/api/mods/").send().await?;
-    let content = res.text().await?;
-    Ok(())
-}
-
-// params: o-modlist, o-mods dir, o-config.json (username and api token, modlist, mod_dir etc) 
-// search mods with https://mods.factorio.com/api/mods/{} (json response)
-// download mods with https://mods.factorio.com/{downloadlink} (highest index is latest)
-// clean up the filename if necessary

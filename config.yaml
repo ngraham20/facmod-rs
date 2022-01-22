@@ -1,4 +1,6 @@
 username: "default"
-api-token: "default"
-mod-dir: "/opt/factorio/server/mods/"
-mod-list: "/opt/factorio/tools/facmod-rs/mod-list.txt"
+api_token: "default"
+mod_dir: "/opt/factorio/server/mods/"
+mod_list:
+- first_mod
+- second_mod
