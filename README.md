@@ -4,14 +4,14 @@ Yeah, I've had tons of trouble getting other downloaders to work. I'm not sure w
 Note, that this program is intended for **Headless Servers**. I don't know how it will work for a regular client.
 
 ## Installation
-### From Github
 ```bash
-$ cargo install --git https://github.com/ngraham20/facmod-rs
-```
+## from crates.io
+$ cargo install facmod-rs
 
-### From Source
-Download or clone the repository, then run
-```bash
+## from Github
+$ cargo install --git https://github.com/ngraham20/facmod-rs
+
+## manually from source
 $ cargo install --path <path_to_repo>
 ```
 
