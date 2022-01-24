@@ -1,6 +1,7 @@
 mod errors;
 mod util;
 mod cli;
+mod facmod;
 pub use crate::errors::*;
 use env_logger::Env;
 
@@ -27,18 +28,20 @@ async fn run() -> Result<()> {
     let matches = cli::parse_args()?;
 
     // first, load the config file if specified
-    let mut configdata = util::FacModConfig::new();
+    let mut configdata = facmod::FacModConfig::new();
     if let Some(config) = matches.value_of("config") {
-        configdata = util::load_config(config)?;
+        configdata = facmod::FacModConfig::from_yaml(config)?;
     }
 
     // overwrite any config values with existing command arguments
     match (matches.value_of("username"),
         matches.value_of("api_token"),
-        matches.value_of("mods_folder")) {
-        (Some(facuser), _, _) => configdata.username = Some(String::from(facuser)),
-        (_, Some(token), _) => configdata.api_token = Some(String::from(token)),
-        (_, _, Some(mod_dir)) => configdata.mod_dir = Some(String::from(mod_dir)),
+        matches.value_of("mods_folder"),
+        matches.value_of("mod_list")) {
+        (Some(facuser), _, _, _) => configdata.username = Some(String::from(facuser)),
+        (_, Some(token), _, _) => configdata.api_token = Some(String::from(token)),
+        (_, _, Some(mod_dir), _) => configdata.mod_dir = Some(String::from(mod_dir)),
+        (_, _, _, Some(mod_list)) => configdata.mod_list = Some(facmod::get_modlist_from_json(mod_list)?),
         _ => {}
     }
 
@@ -74,10 +77,10 @@ async fn run() -> Result<()> {
     };
 
     // search for the mods on the factorio mod portal
-    let fmoddata = util::search_mods(fmods.unwrap()).await?;
+    let fmoddata = facmod::search_mods(fmods.unwrap()).await?;
 
     // download mods
-    util::download_mods(fmoddata, &mod_dir, &configdata.username.unwrap(), &configdata.api_token.unwrap()).await?;
+    facmod::download_mods(fmoddata, &mod_dir, &configdata.username.unwrap(), &configdata.api_token.unwrap()).await?;
 
     Ok(())
 }

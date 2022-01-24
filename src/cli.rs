@@ -18,6 +18,12 @@ pub fn parse_args() -> Result<ArgMatches>{
         .takes_value(true)
         .value_name("FOLDER")
         .help("Specifies the location of the Factorio mods folder. Overrides config value, if exists."))
+    .arg(Arg::new("mod_list")
+        .short('l')
+        .long("mod_list")
+        .takes_value(true)
+        .value_name("FILE")
+        .help("Specifies the location of the Factorio mod-list.json file. See additional help for the location of this file."))
     .arg(Arg::new("username")
         .short('u')
         .long("username")
@@ -38,7 +44,13 @@ pub fn parse_args() -> Result<ArgMatches>{
                             account profile.
     - mod_dir:   String --  The relative or absolute path to your mods folder.
     - mod_list:  List   --  This YAML formatted list should contain the url names of the desired
-                            mods. These can be found in both the download link and the mod url.")
+                            mods. These can be found in both the download link and the mod url.
+
+MOD LIST FILE LOCATIONS:
+    The file mod-list.json can be found in the mods folder for the Factorio client.
+    - WINDOWS:              C:\\Users\\<user>\\AppData\\roaming\\factorio\\mods\\
+    - LINUX:                ~/.factorio/mods/
+")
         .get_matches();
 
     Ok(matches)
