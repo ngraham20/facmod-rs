@@ -5,6 +5,26 @@ use std::path::{PathBuf};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+struct Release {
+    download_url: String,
+    // file_name: String,
+    // info_json: serde_json::Value
+}
+
+#[derive(Deserialize)]
+pub struct FacModPortalResult {
+    // downloads_count: usize,
+    name: String,
+    // owner: String,
+    releases: Vec<Release>,
+    // summary: String,
+    // title: String,
+    // category: String,
+    // score: f64,
+    // thumbnail: String,
+}
+
+#[derive(Deserialize)]
 struct FacMod {
     name: String,
     enabled: bool
@@ -53,46 +73,36 @@ pub fn get_modlist_from_json(path: &str) -> Result<Vec<String>> {
     Ok(enabledlist.into_iter().map(|x| x.name).collect())
 }
 
-pub async fn search_mods(fmods: Vec<String>) -> Result<Vec<serde_json::Value>> {
+pub async fn search_mods(fmods: Vec<String>) -> Result<Vec<FacModPortalResult>> {
     let client = reqwest::Client::new();
-    let mut jsondata: Vec<serde_json::Value> = Vec::new();
+    let mut modresults: Vec<FacModPortalResult> = Vec::new();
     for fmod in fmods {
         info!("Searching mod: {}", fmod);
         let requesturl = format!("https://mods.factorio.com/api/mods/{}", fmod);
         let res = client.get(requesturl).send()
             .await?
-            .json::<serde_json::Value>()
+            .json::<FacModPortalResult>()
             .await?;
-        jsondata.push(res);
+        modresults.push(res);
         info!("Found mod: {}", fmod);
     }
-    Ok(jsondata)
+    Ok(modresults)
 }
 
-pub async fn download_mods(fmods: Vec<serde_json::Value>, mod_folder: &str, username: &str, api_token: &str) -> Result<()> {
+pub async fn download_mods(fmods: Vec<FacModPortalResult>, mod_folder: &str, username: &str, api_token: &str) -> Result<()> {
     let path: PathBuf = [mod_folder].iter().collect();
-    info!("Checking mods folder: {}", path.to_str().unwrap());
+    let pathstr = path.to_str().chain_err(|| format!("Failed to create string from path."))?;
+    info!("Checking mods folder: {}", pathstr);
     if !path.as_path().exists() {
-        error_chain::bail!("Path {} does not exist.", path.to_str().unwrap());
+        error_chain::bail!("Path {} does not exist.", pathstr);
     }
-    info!("Downloading mods into {}", path.to_str().unwrap());
+    info!("Downloading mods into {}", pathstr);
     let client = reqwest::Client::new();
     for fmod in fmods {
-        info!("Downloading: {}", fmod.get("name").unwrap());
-        if let Some(releases) = fmod.get("releases") {
-            match releases {
-                serde_json::Value::Array(r) => {
-                    let release = r.last().unwrap();
-                    let download_url: String = release.get("download_url").unwrap().to_string();
-                    let len = download_url.len();
-
-                    // the download_url has double quotes ("") surrounding it. The slice grabs the middle bits
-                    let request_url = format!("https://mods.factorio.com{}", &download_url[1..len-1]);
-                    util::download_file(request_url, path.clone(), &client, &[("username", &username), ("token", &api_token)]).await?;
-                },
-                _ => {}
-            };
-        }
+        info!("Downloading: {}", fmod.name);
+        let latest = fmod.releases.last().chain_err(|| format!("There are no releases for this mod."))?;
+        let request_url = format!("https://mods.factorio.com{}", &latest.download_url);
+        util::download_file(&client, &request_url, &[("username", &username), ("token", &api_token)], mod_folder).await?;
     }
     Ok(())
 }

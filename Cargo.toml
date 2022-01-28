@@ -2,14 +2,16 @@
 name = "facmod-rs"
 description = "Download mods for Factorio"
 authors = ["Nathaniel Graham <@ngraham20, @raevenant>"]
-version = "0.6.0-beta"
+version = "0.7.0-beta"
 license-file = "LICENSE"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = {version = "0.11.9", features = ["json"]}
+reqwest = {version = "0.11.9", features = ["json", "stream"]}
+futures-util = "0.3.19"
+indicatif = "0.16.2"
 serde_json = "1.0.75"
 serde_yaml = "0.8.13"
 error-chain = "0.12.4"
