@@ -1,6 +1,7 @@
 use error_chain::error_chain;
+// TODO convert this to use "anyway" error crate
 
-error_chain!{
+error_chain! {
     types {
         Error, ErrorKind, ResultExt, Result;
     }
