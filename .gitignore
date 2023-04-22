@@ -2,3 +2,4 @@
 /target
 *.debug
 mod-list.json
+.idea/

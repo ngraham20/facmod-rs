@@ -40,7 +40,6 @@ pub struct FacModConfig {
     pub username: Option<String>,
     pub api_token: Option<String>,
     pub mod_dir: Option<String>,
-    pub mod_list: Option<Vec<String>>
 }
 
 impl FacModConfig {
@@ -49,14 +48,13 @@ impl FacModConfig {
             username: None,
             api_token: None,
             mod_dir: None,
-            mod_list: None,
         }
     }
     pub fn from_yaml(path: &str) -> Result<Self> {
         let canonpath = std::fs::canonicalize(path)?;
         let pathstr = canonpath.to_str().unwrap();
         info!("Loading Config: {}", pathstr);
-        let conf = serde_yaml::from_value(util::load_yaml(pathstr)?)?;
+        let conf:FacModConfig = serde_yaml::from_value(util::load_yaml(pathstr)?)?;
         Ok(conf)
     }
 }

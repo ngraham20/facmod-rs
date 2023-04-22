@@ -2,6 +2,7 @@ mod errors;
 mod util;
 mod cli;
 mod facmod;
+
 pub use crate::errors::*;
 use env_logger::Env;
 
@@ -15,7 +16,7 @@ async fn main() {
         for e in e.iter().skip(1) {
             log::error!("caused by: {}", e);
         }
-        
+
         if let Some(backtrace) = e.backtrace() {
             log::error!("backtrace: {:?}", backtrace);
         }
@@ -35,13 +36,11 @@ async fn run() -> Result<()> {
 
     // overwrite any config values with existing command arguments
     match (matches.value_of("username"),
-        matches.value_of("api_token"),
-        matches.value_of("mods_folder"),
-        matches.value_of("mod_list")) {
-        (Some(facuser), _, _, _) => configdata.username = Some(String::from(facuser)),
-        (_, Some(token), _, _) => configdata.api_token = Some(String::from(token)),
-        (_, _, Some(mod_dir), _) => configdata.mod_dir = Some(String::from(mod_dir)),
-        (_, _, _, Some(mod_list)) => configdata.mod_list = Some(facmod::get_modlist_from_json(mod_list)?),
+           matches.value_of("api_token"),
+           matches.value_of("mods_folder")) {
+        (Some(facuser), _, _) => configdata.username = Some(String::from(facuser)),
+        (_, Some(token), _) => configdata.api_token = Some(String::from(token)),
+        (_, _, Some(mod_dir)) => configdata.mod_dir = Some(String::from(mod_dir)),
         _ => {}
     }
 
@@ -59,18 +58,15 @@ async fn run() -> Result<()> {
         log::error!("A mods directory must be specified in either the config file or as a command argument.");
         confres += 1;
     }
-    if let None = configdata.mod_list {
-        log::error!("A mods list must be specified in either the config file or as a command argument.");
-        confres += 1;
-    }
 
     // all arguments must exist in either the config file or as a command argument
     if confres > 0 {
         error_chain::bail!("Arguments missing from program");
     }
+    let mut modlistfile: String = configdata.mod_dir.clone().unwrap();
+    modlistfile.push_str("/mod-list.json");
+    let fmods = facmod::get_modlist_from_json(modlistfile.as_str());
 
-    let fmods = configdata.mod_list;
-    
     let mod_dir = match matches.value_of("mods_folder") {
         Some(path) => String::from(path),
         _ => configdata.mod_dir.unwrap()

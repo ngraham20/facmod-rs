@@ -8,6 +8,7 @@ use std::path::{PathBuf};
 use std::cmp::min;
 use indicatif::{ProgressBar, ProgressStyle};
 use futures_util::StreamExt;
+use urlencoding::decode;
 
 pub fn load_yaml(config: &str) -> Result<serde_yaml::Value> {
     let f = File::open(config)?;
@@ -31,21 +32,24 @@ pub async fn download_file<T: Serialize + ?Sized>(client: &reqwest::Client, url:
         .await
         .chain_err(|| format!("Failed to GET from '{}'", &url))?;
 
-    
+
     let mut ospath: PathBuf = [mod_folder].iter().collect();
-    let fname = String::from(res
-                .url()
-                .path_segments()
-                .and_then(|segments| segments.last())
-                .and_then(|name| if name.is_empty() { None } else { Some(name) })
-                .unwrap_or("tmp.bin"));
+    let fname = res
+        .url()
+        .path_segments()
+        .and_then(|segments| segments.last())
+        .and_then(|name| if name.is_empty() { None } else {
+            let decoded = decode(name).unwrap_or(String::from(name));
+            Some(decoded)
+        })
+        .unwrap_or(String::from("tmp.bin"));
     ospath.push(&fname);
 
     let total_size = res
         .content_length()
         .chain_err(|| format!("Failed to get content length from '{}'", &url))?;
-    
-    
+
+
     // indicatif setup
     let pb = ProgressBar::new(total_size);
     pb.set_style(ProgressStyle::default_bar()
@@ -70,23 +74,3 @@ pub async fn download_file<T: Serialize + ?Sized>(client: &reqwest::Client, url:
     pb.finish_with_message(format!("Downloaded {} to {}", fname, mod_folder));
     Ok(())
 }
-
-// pub async fn download_file<T: Serialize + ?Sized>(target: String, mut path: PathBuf, client: &reqwest::Client, params: &T) -> Result<()> {
-//     debug!("Sending GET request to {}", target);
-//     let response = client.get(target).query(params).send().await?;
-
-//     let mut dest = {
-//         let fname = response
-//             .url()<T: Serialize + ?Sized>
-//             .path_segments()
-//             .and_then(|segments| segments.last())
-//             .and_then(|name| if name.is_empty() { None } else { Some(name) })
-//             .unwrap_or("tmp.bin");
-//         path.push(fname);
-//         info!("Downolading file: {}", path.to_str().unwrap());
-//         File::create(path)?
-//     };
-//     let content =  response.text().await?;
-//     copy(&mut content.as_bytes(), &mut dest)?;
-//     Ok(())
-// }
