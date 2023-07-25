@@ -7,6 +7,7 @@ use std::path::PathBuf;
 pub trait ModConfig {
     fn new() -> Self;
     fn from_yaml(path: &str) -> Result<Self>;
+    fn from_json(path: &str) -> Result<Self>;
 }
 pub trait ModDownloader {}
 
