@@ -1,13 +1,14 @@
 use crate::errors::*;
+use futures_util::StreamExt;
+use indicatif::{ProgressBar, ProgressStyle};
+use log::info;
+use serde::Serialize;
+use std::cmp::min;
 use std::fs::File;
 use std::io::BufReader;
-use log::{info};
-use serde::{Serialize};
-use std::io::{Write};
-use std::path::{PathBuf};
-use std::cmp::min;
-use indicatif::{ProgressBar, ProgressStyle};
-use futures_util::StreamExt;
+use std::io::Write;
+use std::path::PathBuf;
+use urlencoding::decode;
 
 pub fn load_yaml(config: &str) -> Result<serde_yaml::Value> {
     let f = File::open(config)?;
@@ -21,7 +22,12 @@ pub fn load_json(config: &str) -> Result<serde_json::Value> {
     Ok(serde_json::from_reader(reader)?)
 }
 
-pub async fn download_file<T: Serialize + ?Sized>(client: &reqwest::Client, url: &str, params: &T, mod_folder: &str) -> Result<()> {
+pub async fn download_file<T: Serialize + ?Sized>(
+    client: &reqwest::Client,
+    url: &str,
+    params: &T,
+    mod_folder: &str,
+) -> Result<()> {
     //reqwest setup
     info!("Submitting GET request to {}", &url);
     let res = client
@@ -31,21 +37,24 @@ pub async fn download_file<T: Serialize + ?Sized>(client: &reqwest::Client, url:
         .await
         .chain_err(|| format!("Failed to GET from '{}'", &url))?;
 
-    
     let mut ospath: PathBuf = [mod_folder].iter().collect();
-    let fname = String::from(res
-                .url()
+    let fname = {
+        let oname = String::from(
+            res.url()
                 .path_segments()
                 .and_then(|segments| segments.last())
                 .and_then(|name| if name.is_empty() { None } else { Some(name) })
-                .unwrap_or("tmp.bin"));
+                .unwrap_or("tmp.bin"),
+        );
+        decode(&oname).unwrap().to_string()
+    };
+
     ospath.push(&fname);
 
     let total_size = res
         .content_length()
         .chain_err(|| format!("Failed to get content length from '{}'", &url))?;
-    
-    
+
     // indicatif setup
     let pb = ProgressBar::new(total_size);
     pb.set_style(ProgressStyle::default_bar()
@@ -55,13 +64,15 @@ pub async fn download_file<T: Serialize + ?Sized>(client: &reqwest::Client, url:
 
     // download chunks
     info!("Downloading file {}", fname);
-    let mut file = File::create(&ospath).chain_err(|| format!("Failed to create file '{}'", fname))?;
+    let mut file =
+        File::create(&ospath).chain_err(|| format!("Failed to create file '{}'", fname))?;
     let mut downloaded = 0u64;
     let mut stream = res.bytes_stream();
 
     while let Some(item) = stream.next().await {
         let chunk = item.chain_err(|| format!("Failed to create file '{}'", fname))?;
-        file.write(&chunk).chain_err(|| format!("Error while writing to file"))?;
+        file.write(&chunk)
+            .chain_err(|| format!("Error while writing to file"))?;
         let new = min(downloaded + (chunk.len() as u64), total_size);
         downloaded = new;
         pb.set_position(new);

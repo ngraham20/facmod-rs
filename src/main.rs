@@ -1,7 +1,7 @@
-mod errors;
-mod util;
 mod cli;
+mod errors;
 mod facmod;
+mod util;
 pub use crate::errors::*;
 use env_logger::Env;
 
@@ -15,7 +15,7 @@ async fn main() {
         for e in e.iter().skip(1) {
             log::error!("caused by: {}", e);
         }
-        
+
         if let Some(backtrace) = e.backtrace() {
             log::error!("backtrace: {:?}", backtrace);
         }
@@ -34,14 +34,18 @@ async fn run() -> Result<()> {
     }
 
     // overwrite any config values with existing command arguments
-    match (matches.value_of("username"),
+    match (
+        matches.value_of("username"),
         matches.value_of("api_token"),
         matches.value_of("mods_folder"),
-        matches.value_of("mod_list")) {
+        matches.value_of("mod_list"),
+    ) {
         (Some(facuser), _, _, _) => configdata.username = Some(String::from(facuser)),
         (_, Some(token), _, _) => configdata.api_token = Some(String::from(token)),
         (_, _, Some(mod_dir), _) => configdata.mod_dir = Some(String::from(mod_dir)),
-        (_, _, _, Some(mod_list)) => configdata.mod_list = Some(facmod::get_modlist_from_json(mod_list)?),
+        (_, _, _, Some(mod_list)) => {
+            configdata.mod_list = Some(facmod::get_modlist_from_json(mod_list)?)
+        }
         _ => {}
     }
 
@@ -60,7 +64,9 @@ async fn run() -> Result<()> {
         confres += 1;
     }
     if let None = configdata.mod_list {
-        log::error!("A mods list must be specified in either the config file or as a command argument.");
+        log::error!(
+            "A mods list must be specified in either the config file or as a command argument."
+        );
         confres += 1;
     }
 
@@ -70,17 +76,23 @@ async fn run() -> Result<()> {
     }
 
     let fmods = configdata.mod_list;
-    
+
     let mod_dir = match matches.value_of("mods_folder") {
         Some(path) => String::from(path),
-        _ => configdata.mod_dir.unwrap()
+        _ => configdata.mod_dir.unwrap(),
     };
 
     // search for the mods on the factorio mod portal
     let fmoddata = facmod::search_mods(fmods.unwrap()).await?;
 
     // download mods
-    facmod::download_mods(fmoddata, &mod_dir, &configdata.username.unwrap(), &configdata.api_token.unwrap()).await?;
+    facmod::download_mods(
+        fmoddata,
+        &mod_dir,
+        &configdata.username.unwrap(),
+        &configdata.api_token.unwrap(),
+    )
+    .await?;
 
     Ok(())
 }

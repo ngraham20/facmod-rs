@@ -1,7 +1,7 @@
 use crate::errors::*;
 use clap::{App, Arg, ArgMatches};
 
-pub fn parse_args() -> Result<ArgMatches>{
+pub fn parse_args() -> Result<ArgMatches> {
     let matches = App::new("Factorio Mod Installer")
     .about(clap::crate_description!())
     .version(clap::crate_version!())
