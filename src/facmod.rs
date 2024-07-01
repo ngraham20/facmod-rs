@@ -1,8 +1,8 @@
 use crate::errors::*;
 use crate::util;
-use log::{info};
-use std::path::{PathBuf};
+use log::info;
 use serde::Deserialize;
+use std::path::PathBuf;
 
 #[derive(Deserialize)]
 struct Release {
@@ -27,12 +27,12 @@ pub struct FacModPortalResult {
 #[derive(Deserialize)]
 struct FacMod {
     name: String,
-    enabled: bool
+    enabled: bool,
 }
 
 #[derive(Deserialize)]
 struct FacModList {
-    mods: Vec<FacMod>
+    mods: Vec<FacMod>,
 }
 
 #[derive(Deserialize)]
@@ -40,7 +40,7 @@ pub struct FacModConfig {
     pub username: Option<String>,
     pub api_token: Option<String>,
     pub mod_dir: Option<String>,
-    pub mod_list: Option<Vec<String>>
+    pub mod_list: Option<Vec<String>>,
 }
 
 impl FacModConfig {
@@ -69,7 +69,11 @@ pub fn get_modlist_from_json(path: &str) -> Result<Vec<String>> {
     let facmodlist: FacModList = serde_json::from_value(jsondata)?;
 
     // filter out the "base" mod and all disabled mods
-    let enabledlist: Vec<FacMod> = facmodlist.mods.into_iter().filter(|x| x.enabled && x.name != "base").collect();
+    let enabledlist: Vec<FacMod> = facmodlist
+        .mods
+        .into_iter()
+        .filter(|x| x.enabled && x.name != "base")
+        .collect();
     Ok(enabledlist.into_iter().map(|x| x.name).collect())
 }
 
@@ -79,7 +83,9 @@ pub async fn search_mods(fmods: Vec<String>) -> Result<Vec<FacModPortalResult>> 
     for fmod in fmods {
         info!("Searching mod: {}", fmod);
         let requesturl = format!("https://mods.factorio.com/api/mods/{}", fmod);
-        let res = client.get(requesturl).send()
+        let res = client
+            .get(requesturl)
+            .send()
             .await?
             .json::<FacModPortalResult>()
             .await?;
@@ -89,9 +95,16 @@ pub async fn search_mods(fmods: Vec<String>) -> Result<Vec<FacModPortalResult>> 
     Ok(modresults)
 }
 
-pub async fn download_mods(fmods: Vec<FacModPortalResult>, mod_folder: &str, username: &str, api_token: &str) -> Result<()> {
+pub async fn download_mods(
+    fmods: Vec<FacModPortalResult>,
+    mod_folder: &str,
+    username: &str,
+    api_token: &str,
+) -> Result<()> {
     let path: PathBuf = [mod_folder].iter().collect();
-    let pathstr = path.to_str().chain_err(|| format!("Failed to create string from path."))?;
+    let pathstr = path
+        .to_str()
+        .chain_err(|| format!("Failed to create string from path."))?;
     info!("Checking mods folder: {}", pathstr);
     if !path.as_path().exists() {
         error_chain::bail!("Path {} does not exist.", pathstr);
@@ -100,9 +113,18 @@ pub async fn download_mods(fmods: Vec<FacModPortalResult>, mod_folder: &str, use
     let client = reqwest::Client::new();
     for fmod in fmods {
         info!("Downloading: {}", fmod.name);
-        let latest = fmod.releases.last().chain_err(|| format!("There are no releases for this mod."))?;
+        let latest = fmod
+            .releases
+            .last()
+            .chain_err(|| format!("There are no releases for this mod."))?;
         let request_url = format!("https://mods.factorio.com{}", &latest.download_url);
-        util::download_file(&client, &request_url, &[("username", &username), ("token", &api_token)], mod_folder).await?;
+        util::download_file(
+            &client,
+            &request_url,
+            &[("username", &username), ("token", &api_token)],
+            mod_folder,
+        )
+        .await?;
     }
     Ok(())
 }
